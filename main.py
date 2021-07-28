@@ -1,64 +1,67 @@
 #!/usr/bin/env python3
-# TODO
-#   1. 
-#   2.
-#   3.
-#   4.
-#   5.
-
-
-import requests
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
 from bs4 import BeautifulSoup as bs
-from urllib.request import Request, urlopen
 
-def get_soup(url):
-    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
-    if response.ok:
-        soup = bs(response.text, "html.parser")
-    else:
-        soup = ""
-    return soup
+PATH = r"C:\Program Files (x86)\geckodriver.exe"
+PATH_2 = r"C:\Program Files (x86)\chromedriver.exe"
+url = "https://accounts.pixiv.net/login?return_to=https%3A%2F%2Fwww.pixiv.net%2Fen%2Ftags%2Fasuna&lang=en&source=pc&view_type=page"
 
-def link_generator(query,page):
-    page = str(page)
-    query = query.split(" ")
-    query = "%20".join(query)
-    link = "https://pixiv.net/en/tags/"+query+"/artworks?p="+ page + "&s_mode=s_tag"
-    return link
+# Get basic information from the user: query, pixiv username and password
+query = input("What is your keyword: ")
+username = input("What is your user name: ")
+password = input("What is your password: ")
 
-def get_links(page_link):
-    soup = get_soup(page_link)
-    print(soup)
-    links = soup.find("ul",class_="l7cibp-1 iTgRcY").find_all("a",class_='rp5asc-16 kdmVAX sc-AxjAm MksUu')
-    print(links)
-    return links
+# Choose your browser:
+browser = input("Would you like to use Google or Firefox(g/f):")
+if browser == "g":
+    driver = webdriver.Chrome(PATH_2)
+else:
+    driver = webdriver.Firefox(executable_path= PATH)
+driver.get(url)
+
+# Enter the username in the box
+search_username = driver.find_element_by_xpath("/html/body/div[4]/div[3]/div/form/div[1]/div[1]/input")
+for letter in username:
+    search_username.send_keys(letter)
+
+# Enter the password in the box
+search_passwd = driver.find_element_by_xpath("/html/body/div[4]/div[3]/div/form/div[1]/div[2]/input")
+for letter in password:
+    search_passwd.send_keys(letter)
+search_passwd.send_keys(Keys.RETURN)
 
 
-def detailed_information(the_links):
-    # Artist
-    # Likes
-    # Bookmarks
-    # Views
-    try:
-        pass
-    except:
-        pass
+# Return to home page
+try:
+    home_page = WebDriverWait(driver, 300).until(
+        EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[2]/div[1]/div[1]/div[1]/div/div[1]/a"))
+    )
+    home_page.click()
+except:
+    driver.quit()
 
-def csv_writer():
-    pass
+# Enter the query in the search box
+try:
+    search_box = WebDriverWait(driver, 30).until(
+        EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[2]/div[1]/div[1]/div[1]/div/div[2]/form/div/input"))
+    )
+    search_box.send_keys(query)
+    search_box.send_keys(Keys.RETURN)
+except:
+    driver.quit()
 
-def main():
-    query = input("What is the keyword: ")
-    page_number = 1
-    while True:
-        page_link = link_generator(query,page_number)
-        print(page_link)
-        the_links = get_links(page_link)
-        page_number += 1
-        break
-    print(the_links)
+def find_the_link():
+    global driver
+    time.sleep(5)
+    html = driver.execute_script("return document.documentElement.outerHTML")
+    soup = bs(html, "lxml")
+    links = soup.find_all("a",class_="rp5asc-16 kdmVAX sc-AxjAm MksUu")
+    links = [link.get("href") for link in links]
 
-if __name__ == "__main__":
-    main()
 
 
