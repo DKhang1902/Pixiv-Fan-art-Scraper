@@ -63,6 +63,13 @@ try:
     home_page.click()
 except:
     driver.quit()
+try:
+    home_page = WebDriverWait(driver_2, 300).until(
+        EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[2]/div[1]/div[1]/div[1]/div/div[1]/a"))
+    )
+    home_page.click()
+except:
+    driver.quit()
 
 # Enter the query in the search box
 try:
@@ -76,27 +83,31 @@ except:
 
 def find_the_links():
     global driver
+    time.sleep(5)
     html = driver.execute_script("return document.documentElement.outerHTML")
     soup = bs(html, "lxml")
     links = soup.find_all("a",class_="rp5asc-16 kdmVAX sc-AxjAm MksUu")
     links = [link.get("href") for link in links]
     links = ["https://pixiv.net"+link for link in links if link.startswith("/en/artworks")]
+    print(links)
     return links
 
 def write_to_csv_file(file_name, row):
-    with open(file_name,"a",encoding="utf-8") as csvfile:
+    with open(file_name,"a",encoding="utf-8", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(row)
     
 def get_detailed_data(links):
     global driver_2
-    global file_name
     for link in links:
         driver_2.get(link)
         time.sleep(2)
         html = driver_2.execute_script("return document.documentElement.outerHTML")
         soup = bs(html,"lxml")
         author = soup.find("a",class_ = "sc-10gpz4q-6 hsjhjk").find("div").text
+        if author == None:
+            time.sleep(3)
+            author = soup.find("a",class_ = "sc-10gpz4q-6 hsjhjk").find("div").text
         likes = soup.find("dd", {"title": "Like"}).text
         bookmarks = soup.find("dd", {"title": "Bookmarks"}).text
         views = soup.find("dd", {"title": "Views"}).text
@@ -116,17 +127,20 @@ with open(file_name,"a",encoding="utf-8") as csvfile:
         writer.writerow(["title", "author", "likes", "bookmarks", "views", "date","link"])
 
 the_links = find_the_links()
+print("This is number 1")
 get_detailed_data(the_links)
+print("This is number 2")
 page = 2
-
+def url_generator(query,page):
+    url = "https://www.pixiv.net/en/tags/" + query.replace(" ","%20") + "/artworks?p="+str(page)+"&s_mode=s_tag"
+    return url
 while True:
+    hyper = url_generator(query,page)
     try:
-        the_page = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.LINK_TEXT,str(page)))
-        ) 
-        the_page.click()
+        time.sleep(3)
+        driver.get(hyper)
     except:
-        continue
+        pass
     the_links = []
     the_links = find_the_links()
     get_detailed_data(the_links)
